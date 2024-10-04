@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: backend2
+  name: backend2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend2
+  template:
+    metadata:
+      labels:
+        app: backend2
+    spec:
+      containers:
+      - image: gaurav2203/microservice-backend2:v2
+        name: microservice-backend2
+        imagePullPolicy: Always
+        ports: 
+          - containerPort: 5002
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend2
+  name: backend2
+spec:
+  ports:
+  - name: backend2
+    port: 5002
+    protocol: TCP
+    targetPort: 5002
+  selector:
+    app: backend2
+  type: ClusterIP
