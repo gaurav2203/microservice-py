@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: frontend
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - image: gaurav2203/microservice-frontend:v2.1
+        name: microservice-frontend
+        imagePullPolicy: Always
+        ports: 
+          - containerPort: 5000
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: frontend
+  name: frontend
+spec:
+  ports:
+  - name: frontend
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: frontend
+  type: NodePort

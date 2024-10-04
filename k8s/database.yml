@@ -1,0 +1,108 @@
+#apiVersion: v1
+#kind: PersistentVolume 
+#metadata: 
+#  name: microservice-db-pv
+#spec: 
+#  capacity: 
+#    storage: 1Gi
+#  volumeMode: Filesystem
+#  accessModes: 
+#    - ReadWriteMany
+#  persistentVolumeReclaimPolicy: Recycle
+#  hostPath: 
+#    path: "/home/gaurav/Project1/data-dir"
+#
+#---
+#
+#apiVersion: v1
+#kind: PersistentVolumeClaim
+#metadata: 
+#  name: microservice-db-pvc
+#spec: 
+#  accessModes:
+#    - ReadWriteMany
+#  volumeMode: Filesystem 
+#  resources: 
+#    requests: 
+#      storage: 1Gi 
+#  volumeName: microservice-db-pv
+#
+#--- 
+
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: init-cm
+data: 
+  init.sql: |
+          CREATE TABLE users ( id SERIAL PRIMARY KEY, name VARCHAR(100), email VARCHAR(100));
+          INSERT INTO users (name, email) VALUES 
+          ('John Doe', 'johndoe@example.com'),
+          ('Jane Smith', 'janesmith@example.com'),
+          ('Test', 'test@example.com');
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: database
+  name: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      hostname: postgres 
+      volumes: 
+        - name: database-vol
+          configMap: 
+            name: init-cm
+        - name: db-cm
+          configMap: 
+            name: db-cm
+      containers:
+      - image: postgres
+        name: postgres
+        ports: 
+          - containerPort: 5432
+        volumeMounts: 
+          - name: database-vol
+            mountPath: /docker-entrypoint-initdb.d/
+        env: 
+          - name: POSTGRES_DB
+            valueFrom: 
+              configMapKeyRef: 
+                name: db-cm
+                key: POSTGRES_DB
+          - name: POSTGRES_USER
+            valueFrom: 
+              configMapKeyRef: 
+                name: db-cm
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom: 
+              configMapKeyRef: 
+                name: db-cm
+                key: POSTGRES_PASSWORD
+
+---
+
+apiVersion: v1
+kind: Service
+metadata: 
+  name: database
+spec: 
+  selector: 
+    app: database
+  ports: 
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
